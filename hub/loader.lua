@@ -23,10 +23,6 @@ local window = UI.windowClass.new({
 })
 
 local tab = window:addTab("Main")
-local options = {}
-for _, c in ipairs(available) do
-    table.insert(options, c.name)
-end
 
 -- СИСТЕМА УВЕДОМЛЕНИЙ (GUI)
 local CoreGui = game:GetService("CoreGui")
@@ -87,29 +83,45 @@ local function notify(text, duration)
     end)
 end
 
--- ВЫБОР И ЗАГРУЗКА
-local dropdown = tab:addDropdown({
-    text    = "Select script:";
-    options = options;
-    flag    = "cheat_select";
-}, 1)
-
+-- ==========================================
+-- ВЫБОР ЧИТА (ЧЕРЕЗ ГАЛОЧКИ)
+-- ==========================================
 local selectedCheat = available[1]
-dropdown.flag:OnChanged(function(selected)
-    for _, c in ipairs(available) do
-        if c.name == selected then
-            selectedCheat = c
-            break
-        end
-    end
-end)
 
+for i, c in ipairs(available) do
+    -- Создаем по одной галочке на каждый чит в списке
+    local toggle = tab:addToggle({
+        text    = "Use " .. c.name;
+        default = (i == 1); -- Первая галочка включена по умолчанию
+        flag    = "select_" .. i;
+    }, 1)
+
+    toggle.flag:OnChanged(function(state)
+        if not state then return end
+        
+        -- Если включили этот чит, выключаем все остальные
+        selectedCheat = c
+        for j, otherToggle in ipairs(tab.toggles or {}) do
+            if j ~= i then
+                otherToggle:setValue(false)
+            end
+        end
+    end)
+    
+    -- В этой библиотеке нет прямого списка toggles, сохраняем вручную
+    if not tab.toggles then tab.toggles = {} end
+    tab.toggles[i] = toggle
+end
+
+-- ==========================================
+-- КНОПКА ЗАГРУЗКИ
+-- ==========================================
 local loadButton = tab:addToggle({
     text = "Load Script",
     default = false,
     risky = true,
     flag = "btn_load"
-}, 1)
+}, 2) -- 2 означает правую колонку
 
 loadButton.flag:OnChanged(function(state)
     if not state then return end
