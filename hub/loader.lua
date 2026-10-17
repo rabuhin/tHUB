@@ -35,7 +35,7 @@ end
 
 -- Создаём выпадающий список
 local dropdown = tab:addDropdown({
-    text    = "Выбери скрипт:";
+    text    = "Select script:"; -- <- Тут был русский текст, теперь английский
     options = options;
     flag    = "cheat_select";
 }, 1)
@@ -55,15 +55,15 @@ dropdown.flag:OnChanged(function(selected)
             local src = http(c.url)
             local fn, err = loadstring(src)
             if not fn then
-                window:notify("Ошибка компиляции: " .. tostring(err), 3)
+                window:notify("Compile fail: " .. tostring(err), 3)
                 return
             end
             
             local ok, runErr = pcall(fn)
             if not ok then
-                window:notify("Ошибка запуска: " .. tostring(runErr), 3)
+                window:notify("Runtime err: " .. tostring(runErr), 3)
             else
-                window:notify("Успешно загружено: " .. c.name, 3)
+                window:notify("Loaded: " .. c.name, 3)
             end
         end
     end
