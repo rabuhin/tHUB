@@ -1,3 +1,44 @@
+-- PATCH: защита от краша при отсутствии файловой системы
+local _orig_pcall = pcall;
+pcall = function(func, ...)
+    if type(func) == "function" and (func == writefile or func == readfile or func == isfile or func == makefolder or func == isfolder) then
+        return _orig_pcall(func, ...);
+    end;
+    return _orig_pcall(func, ...);
+end;
+local _orig_loadFolders = nil; -- отключаем оригинальные вызовы
+
+-- вставляем безопасные функции прямо перед loadFolders
+local _safeLoadFolders = function()
+    _orig_pcall(function()
+        local requiredFolders = { 'amghook'; 'amghook\\assets'; };
+        for i = 1, #requiredFolders do
+            local folderName = requiredFolders[i];
+            if (not isfolder(folderName)) then makefolder(folderName); end;
+        end;
+    end)
+end;
+
+local _safeLoadAssets = function()
+    _safeLoadFolders();
+    _orig_pcall(function()
+        for assetName, assetData in ASSET_IMAGES do
+            local filePath = `amghook\\assets\\{assetName}`;
+            if (not isfile(filePath)) then
+                writefile(filePath, base64_decode(assetData));
+            end;
+        end;
+    end)
+end;
+
+local _safeFetchImage = function(name)
+    local filePath = `amghook\\assets\\{name}.png`;
+    if (not ASSET_IMAGES[`{name}.png`]) then return; end;
+    _safeLoadAssets();
+    if (not isfile(filePath)) then return; end;
+    return readfile(filePath);
+end;
+-- END PATCH
 -- cleardrawcache();
 
 --[[
@@ -80,42 +121,42 @@ local runService: RunService 			= cloneref(game:GetService('RunService'));
 local camera            = cloneref(workspace.CurrentCamera);
 
 local loadFolders = function()
-      local requiredFolders = {
-            'amghook';
-		'amghook\\assets';
-      };
-
-      for i = 1, #requiredFolders do
-            local folderName = requiredFolders[i];
-            if (not isfolder(folderName)) then
-                  makefolder(folderName);
+      pcall(function()
+            local requiredFolders = {
+                  'amghook';
+                  'amghook\\assets';
+            };
+            for i = 1, #requiredFolders do
+                  local folderName = requiredFolders[i];
+                  if (not isfolder(folderName)) then
+                        makefolder(folderName);
+                  end;
             end;
-      end;
+      end);
 end;
-local loadAssets = function()
-	loadFolders();
-	for assetName, assetData in ASSET_IMAGES do
-		local filePath = `amghook\\assets\\{assetName}`;
-		if (not isfile(filePath)) then
-			writefile(filePath, base64_decode(assetData));
-		end;
-	end;
 
-	-- new
-	-- for assetName, assetData in ASSET_IMAGES do
-	-- 	ASSET_IMAGES[assetName] = base64_decode(assetData);
-	-- end;
+local loadAssets = function()
+      loadFolders();
+      pcall(function()
+            for assetName, assetData in ASSET_IMAGES do
+                  local filePath = `amghook\\assets\\{assetName}`;
+                  if (not isfile(filePath)) then
+                        writefile(filePath, base64_decode(assetData));
+                  end;
+            end;
+      end);
 end;
+
 local fetchImage = function(name)
-	local filePath = `amghook\\assets\\{name}.png`;
-	if (not ASSET_IMAGES[`{name}.png`]) then
-		return;
-	end;
-	loadAssets();
-	if (not isfile(filePath)) then
-		return;
-	end;
-	return readfile(filePath);
+      local filePath = `amghook\\assets\\{name}.png`;
+      if (not ASSET_IMAGES[`{name}.png`]) then
+            return;
+      end;
+      loadAssets();
+      if (not isfile(filePath)) then
+            return;
+      end;
+      return readfile(filePath);
 end;
 
 local roundedDrawing = function()
