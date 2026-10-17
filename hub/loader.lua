@@ -23,23 +23,19 @@ local window = UI.windowClass.new({
 })
 
 local tab = window:addTab("Main")
-
 local options = {}
 for _, c in ipairs(available) do
     table.insert(options, c.name)
 end
 
--- 1. Создаем список, но БЕЗ автозапуска
+-- Выпадающий список (1 = левая колонка)
 local dropdown = tab:addDropdown({
     text    = "Select script:";
     options = options;
     flag    = "cheat_select";
 }, 1)
 
--- Переменная для хранения выбранного чита
 local selectedCheat = available[1]
-
--- Следим за выбором (но ничего не запускаем)
 dropdown.flag:OnChanged(function(selected)
     for _, c in ipairs(available) do
         if c.name == selected then
@@ -49,32 +45,27 @@ dropdown.flag:OnChanged(function(selected)
     end
 end)
 
--- 2. Создаем кнопку "Load Script" через Toggle
+-- Кнопка загрузки (2 = правая колонка)
 local loadButton = tab:addToggle({
     text = "Load Script",
     default = false,
-    risky = true, -- Красит текст в желтый цвет, чтобы выделялось
+    risky = true,
     flag = "btn_load"
-}, 1)
+}, 2)
 
--- 3. Логика при нажатии на кнопку
 loadButton.flag:OnChanged(function(state)
-    if not state then return end -- Срабатываем только когда включили
-
+    if not state then return end
     local c = selectedCheat
     if not c then return end
 
-    -- Мгновенно выключаем галочку назад
     loadButton:setValue(false)
 
-    -- Применяем FFlags
     if c.fflags and setfflag then
         for k, v in pairs(c.fflags) do
             pcall(setfflag, k, v)
         end
     end
     
-    -- Загружаем и запускаем чит
     local src = http(c.url)
     local fn, err = loadstring(src)
     if not fn then
