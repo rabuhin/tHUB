@@ -28,13 +28,10 @@ for _, c in ipairs(available) do
     table.insert(options, c.name)
 end
 
--- ==========================================
--- НОВАЯ СИСТЕМА УВЕДОМЛЕНИЙ (ЧЕРЕЗ GUI)
--- ==========================================
+-- СИСТЕМА УВЕДОМЛЕНИЙ (GUI)
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 
--- Удаляем старый баганный GUI, если он остался
 local oldGui = CoreGui:FindFirstChild("tHUB_Notifications")
 if oldGui then oldGui:Destroy() end
 
@@ -48,20 +45,18 @@ local function notify(text, duration)
     duration = duration or 3
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(0, 200, 0, 30)
-    frame.Position = UDim2.new(1, -210, 0, 50) -- Правый верхний угол
+    frame.Position = UDim2.new(1, -210, 0, 50)
     frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     frame.BackgroundTransparency = 0.2
     frame.BorderSizePixel = 0
     frame.Parent = notifGui
 
-    -- Красная полоска слева
     local line = Instance.new("Frame")
     line.Size = UDim2.new(0, 4, 1, 0)
     line.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
     line.BorderSizePixel = 0
     line.Parent = frame
 
-    -- Текст
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, -10, 1, 0)
     label.Position = UDim2.new(0, 10, 0, 0)
@@ -73,7 +68,6 @@ local function notify(text, duration)
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = frame
 
-    -- Сдвигаем старые уведомления вниз
     for _, child in ipairs(notifGui:GetChildren()) do
         if child:IsA("Frame") and child ~= frame then
             local newPos = child.Position + UDim2.new(0, 0, 0, 35)
@@ -81,7 +75,6 @@ local function notify(text, duration)
         end
     end
 
-    -- Удаление через время
     task.delay(duration, function()
         if frame and frame.Parent then
             local tween = TweenService:Create(frame, TweenInfo.new(0.3), {BackgroundTransparency = 1})
@@ -94,9 +87,7 @@ local function notify(text, duration)
     end)
 end
 
--- ==========================================
--- ЛОГИКА МЕНЮ
--- ==========================================
+-- ВЫБОР И ЗАГРУЗКА
 local dropdown = tab:addDropdown({
     text    = "Select script:";
     options = options;
@@ -126,6 +117,9 @@ loadButton.flag:OnChanged(function(state)
 
     local c = selectedCheat
     if not c then return end
+
+    -- СКРЫВАЕМ МЕНЮ ХАБА
+    window:toggle(false)
 
     if c.fflags and setfflag then
         for k, v in pairs(c.fflags) do
