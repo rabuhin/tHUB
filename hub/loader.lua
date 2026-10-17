@@ -17,6 +17,7 @@ for _, cheat in ipairs(config) do
     end
 end
 
+-- Создаем окно
 local window = UI.windowClass.new({
     title = "tHUB",
     size  = Vector2.new(600, 450),
@@ -28,13 +29,14 @@ for _, c in ipairs(available) do
     table.insert(options, c.name)
 end
 
--- Выпадающий список (1 = левая колонка)
+-- 1. Список скриптов
 local dropdown = tab:addDropdown({
     text    = "Select script:";
     options = options;
     flag    = "cheat_select";
 }, 1)
 
+-- Храним выбранный скрипт, но НЕ запускаем его
 local selectedCheat = available[1]
 dropdown.flag:OnChanged(function(selected)
     for _, c in ipairs(available) do
@@ -45,27 +47,19 @@ dropdown.flag:OnChanged(function(selected)
     end
 end)
 
--- Кнопка загрузки (2 = правая колонка)
-local loadButton = tab:addToggle({
-    text = "Load Script",
-    default = false,
-    risky = true,
-    flag = "btn_load"
-}, 2)
-
-loadButton.flag:OnChanged(function(state)
-    if not state then return end
+-- 2. Делаем кнопку Load Script
+local loadButton = tab:addButton("LOAD SCRIPT", function()
     local c = selectedCheat
     if not c then return end
 
-    loadButton:setValue(false)
-
+    -- Включаем FFlags
     if c.fflags and setfflag then
         for k, v in pairs(c.fflags) do
             pcall(setfflag, k, v)
         end
     end
     
+    -- Загружаем сам скрипт
     local src = http(c.url)
     local fn, err = loadstring(src)
     if not fn then
@@ -79,4 +73,4 @@ loadButton.flag:OnChanged(function(state)
     else
         window:notify("Loaded: " .. c.name, 3)
     end
-end)
+end, 1) -- 1 означает левую колонку, где список
