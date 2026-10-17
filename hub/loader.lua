@@ -1,4 +1,3 @@
--- hub/loader.lua
 local BASE = "https://raw.githubusercontent.com/rabuhin/tHUB/main/"
 
 local function http(url)
@@ -7,10 +6,12 @@ local function http(url)
     return body
 end
 
-local UI     = loadstring(http(BASE .. "hub/ui.lua"))()
+-- Загружаем UI и конфиг
+local UI = loadstring(http(BASE .. "hub/ui.lua"))()
 local config = loadstring(http(BASE .. "hub/config.lua"))()
 local placeId = game.PlaceId
 
+-- Фильтруем доступные читы
 local available = {}
 for _, cheat in ipairs(config) do
     if cheat.placeId == nil or cheat.placeId == placeId then
@@ -18,41 +19,51 @@ for _, cheat in ipairs(config) do
     end
 end
 
+-- Создаём окно через наш uiLibrary
+local window = UI.windowClass.new({
+    title = "tHUB",
+    size  = Vector2.new(600, 450),
+})
+
+local tab = window:addTab("Main")
+
+-- Собираем названия читов для списка
 local options = {}
 for _, c in ipairs(available) do
     table.insert(options, c.name)
 end
 
-local window = UI.windowClass.new({
-    title = "tHUB",
-    size  = Vector2.new(600, 500),
-})
-
-local tab = window:addTab("Main")
-
+-- Создаём выпадающий список
 local dropdown = tab:addDropdown({
-    text    = "Выбери чит";
+    text    = "Выбери скрипт:";
     options = options;
     flag    = "cheat_select";
 }, 1)
 
+-- Событие при выборе чита из списка
 dropdown.flag:OnChanged(function(selected)
     for _, c in ipairs(available) do
         if c.name == selected then
+            -- Включаем FFlags, если они есть
             if c.fflags and setfflag then
                 for k, v in pairs(c.fflags) do
                     pcall(setfflag, k, v)
                 end
             end
+            
+            -- Загружаем и запускаем сам чит
             local src = http(c.url)
             local fn, err = loadstring(src)
             if not fn then
-                window:notify("compile fail: " .. tostring(err), 3)
+                window:notify("Ошибка компиляции: " .. tostring(err), 3)
                 return
             end
+            
             local ok, runErr = pcall(fn)
             if not ok then
-                window:notify("runtime: " .. tostring(runErr), 3)
+                window:notify("Ошибка запуска: " .. tostring(runErr), 3)
+            else
+                window:notify("Успешно загружено: " .. c.name, 3)
             end
         end
     end
