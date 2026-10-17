@@ -29,64 +29,67 @@ for _, c in ipairs(available) do
 end
 
 -- ==========================================
--- СВОЯ СИСТЕМА УВЕДОМЛЕНИЙ
+-- НОВАЯ СИСТЕМА УВЕДОМЛЕНИЙ (ЧЕРЕЗ GUI)
 -- ==========================================
-local activeNotifications = {}
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+
+-- Удаляем старый баганный GUI, если он остался
+local oldGui = CoreGui:FindFirstChild("tHUB_Notifications")
+if oldGui then oldGui:Destroy() end
+
+local notifGui = Instance.new("ScreenGui")
+notifGui.Name = "tHUB_Notifications"
+notifGui.ResetOnSpawn = false
+notifGui.IgnoreGuiInset = true
+notifGui.Parent = CoreGui
 
 local function notify(text, duration)
     duration = duration or 3
-    local yOffset = 50
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 200, 0, 30)
+    frame.Position = UDim2.new(1, -210, 0, 50) -- Правый верхний угол
+    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    frame.BackgroundTransparency = 0.2
+    frame.BorderSizePixel = 0
+    frame.Parent = notifGui
 
-    -- Сдвигаем все старые уведомления вниз
-    for _, notif in ipairs(activeNotifications) do
-        notif.bg.Position = notif.bg.Position + Vector2.new(0, 25)
-        notif.line.Position = notif.line.Position + Vector2.new(0, 25)
-        notif.text.Position = notif.text.Position + Vector2.new(0, 25)
+    -- Красная полоска слева
+    local line = Instance.new("Frame")
+    line.Size = UDim2.new(0, 4, 1, 0)
+    line.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+    line.BorderSizePixel = 0
+    line.Parent = frame
+
+    -- Текст
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -10, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextSize = 14
+    label.Font = Enum.Font.Code
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+
+    -- Сдвигаем старые уведомления вниз
+    for _, child in ipairs(notifGui:GetChildren()) do
+        if child:IsA("Frame") and child ~= frame then
+            local newPos = child.Position + UDim2.new(0, 0, 0, 35)
+            TweenService:Create(child, TweenInfo.new(0.2), {Position = newPos}):Play()
+        end
     end
 
-    -- Создаем новые элементы
-    local bg = Drawing.new("Square")
-    bg.Size = Vector2.new(200, 20)
-    bg.Position = Vector2.new(workspace.CurrentCamera.ViewportSize.X - 210, yOffset)
-    bg.Color = Color3.fromRGB(30, 30, 30)
-    bg.Transparency = 0.5
-    bg.Filled = true
-    bg.Visible = true
-
-    local line = Drawing.new("Square")
-    line.Size = Vector2.new(3, 20)
-    line.Position = bg.Position
-    line.Color = Color3.fromRGB(255, 0, 0)
-    line.Filled = true
-    line.Visible = true
-
-    local txt = Drawing.new("Text")
-    txt.Text = text
-    txt.Size = 14
-    txt.Color = Color3.fromRGB(255, 255, 255)
-    txt.Position = bg.Position + Vector2.new(10, 2)
-    txt.Visible = true
-    txt.Font = 2 -- System font
-
-    local notif = { bg = bg, line = line, text = txt, time = tick() }
-    table.insert(activeNotifications, notif)
-
-    -- Цикл удаления
-    task.spawn(function()
-        while tick() - notif.time < duration do
-            task.wait(0.1)
-        end
-        -- Удаляем графику
-        bg:Remove()
-        line:Remove()
-        txt:Remove()
-        
-        -- Убираем из списка
-        for i, v in ipairs(activeNotifications) do
-            if v == notif then
-                table.remove(activeNotifications, i)
-                break
-            end
+    -- Удаление через время
+    task.delay(duration, function()
+        if frame and frame.Parent then
+            local tween = TweenService:Create(frame, TweenInfo.new(0.3), {BackgroundTransparency = 1})
+            local tween2 = TweenService:Create(label, TweenInfo.new(0.3), {TextTransparency = 1})
+            local tween3 = TweenService:Create(line, TweenInfo.new(0.3), {BackgroundTransparency = 1})
+            tween:Play(); tween2:Play(); tween3:Play()
+            tween.Completed:Wait()
+            frame:Destroy()
         end
     end)
 end
